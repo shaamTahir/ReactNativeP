@@ -101,10 +101,10 @@ const ActionButton = ({navigation}) => {
   //   Icon button Component
   const IconButton = ({icon, style, onPress = () => {}}) => {
     return (
-      <Animated.View style={[styles.actionBtn, style]}>
+      <Animated.View style={[styles.iconButton, style]}>
         <TouchableHighlight
           underlayColor={COLORS.lightRed}
-          style={styles.actionBtn}
+          style={styles.iconButton}
           onPress={onPress}>
           <Icon
             type={Icons.EvilIcons}
@@ -158,7 +158,7 @@ const ActionButton = ({navigation}) => {
 
 export default ActionButton;
 
-const circleStyles = {
+const commonCircleStyles = {
   width: button_size,
   height: button_size,
   borderRadius: button_size / 2,
@@ -178,18 +178,18 @@ const styles = StyleSheet.create({
   },
 
   fab: {
-    ...circleStyles,
+    ...commonCircleStyles,
     backgroundColor: COLORS.red,
   },
 
   expandingCircle: {
-    ...circleStyles,
+    ...commonCircleStyles,
     position: 'absolute',
     zIndex: -1,
     backgroundColor: COLORS.red,
   },
-  actionBtn: {
-    ...circleStyles,
+  iconButton: {
+    ...commonCircleStyles,
     backgroundColor: COLORS.darkRed,
     position: 'absolute',
     zIndex: -1,
