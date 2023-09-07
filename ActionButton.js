@@ -111,9 +111,7 @@ const ActionButton = ({navigation}) => {
             name={icon}
             size={30}
             color={COLORS.white}
-            style={{
-              marginTop: -5,
-            }}
+        
           />
         </TouchableHighlight>
       </Animated.View>
