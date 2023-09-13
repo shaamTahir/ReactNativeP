@@ -1,0 +1,250 @@
+import {
+  Dimensions,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+
+import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import {COLORS} from '../constants/theme';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+
+const {width, height} = Dimensions.get('window');
+const heartIcon = require('../assets/images/heartIcon.png');
+
+const data = [
+  {
+    ref: React.createRef(),
+    label: 'Cricket',
+    image:
+      'https://images.pexels.com/photos/9420724/pexels-photo-9420724.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  {
+    ref: React.createRef(),
+    label: 'Basketball',
+    image:
+      'https://images.pexels.com/photos/2834917/pexels-photo-2834917.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  },
+  {
+    ref: React.createRef(),
+    label: 'Weightlifting',
+    image:
+      'https://images.pexels.com/photos/6550849/pexels-photo-6550849.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  },
+  {
+    ref: React.createRef(),
+    label: 'Football',
+    image:
+      'https://images.pexels.com/photos/1657328/pexels-photo-1657328.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+  },
+  {
+    ref: React.createRef(),
+    label: 'Golf',
+    image:
+      'https://images.pexels.com/photos/1325745/pexels-photo-1325745.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  },
+];
+
+const DynamicTabs = () => {
+  const scrollX = useSharedValue(0);
+  const flatListRef = useRef();
+  const heartScale = useSharedValue(0);
+
+  const heartAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          scale: withSpring(heartScale.value),
+        },
+      ],
+    };
+  });
+
+  //   onScroll
+  const onScroll = useAnimatedScrollHandler(e => {
+    scrollX.value = e.contentOffset.x;
+  });
+
+  //   TabIndicator
+  const TabIndicator = ({measures}) => {
+    const animatedTabIndicatorStyles = useAnimatedStyle(() => {
+      const inputRange = measures?.map((_, i) => i * width);
+
+      return {
+        width: interpolate(
+          scrollX.value,
+          inputRange,
+          measures?.map(e => e.width),
+        ),
+        transform: [
+          {
+            translateX: interpolate(
+              scrollX.value,
+              inputRange,
+              measures?.map(e => e.x),
+            ),
+          },
+        ],
+      };
+    });
+    return (
+      <Animated.View
+        style={[styles.tabIndicator, animatedTabIndicatorStyles]}
+      />
+    );
+  };
+
+  //   Tabs
+  const Tabs = () => {
+    const tabsRef = useRef();
+    const [measureLayout, setMeasureLayout] = useState([]);
+
+    useEffect(() => {
+      const timeout = setTimeout(() => {
+        const measures = [];
+        data?.forEach(d => {
+          d?.ref?.current?.measureLayout(
+            tabsRef.current,
+            (x, y, width, height) => {
+              measures.push({
+                x,
+                y,
+                width,
+                height,
+              });
+
+              if (measures?.length === data?.length) {
+                setMeasureLayout(measures);
+              }
+            },
+          );
+        });
+      }, 0);
+
+      return () => clearTimeout(timeout);
+    }, [tabsRef]);
+
+    return (
+      <View style={styles.tabsContainer} ref={tabsRef}>
+        {data?.map((e, i) => (
+          <TouchableOpacity
+            activeOpacity={0.5}
+            key={i}
+            onPress={() => onTabPress(i)}>
+            <Text style={styles.tabText} ref={e?.ref}>
+              {e.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {measureLayout?.length > 0 && <TabIndicator measures={measureLayout} />}
+      </View>
+    );
+  };
+
+  //   onTabPress
+  const onTabPress = useCallback(index => {
+    flatListRef?.current?.scrollToOffset({
+      offset: index * width,
+      animated: true,
+    });
+  }, []);
+
+  const doubleTap = Gesture.Tap()
+    .maxDuration(250)
+    .numberOfTaps(2)
+    .onStart(() => {
+      heartScale.value = 1;
+    })
+    .onEnd(() => {
+      heartScale.value = withDelay(800, withTiming(0));
+    });
+
+  return (
+    <>
+      <Animated.FlatList
+        ref={flatListRef}
+        data={data}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        key={(_, index) => index?.toString()}
+        bounces={false}
+        onScroll={onScroll}
+        renderItem={({item}) => {
+          return (
+            <GestureDetector gesture={Gesture.Exclusive(doubleTap)}>
+              <View style={{width, height}}>
+                <ImageBackground
+                  source={{uri: item?.image}}
+                  resizeMode="cover"
+                  style={styles.imageBgStyles}>
+                  <Animated.Image
+                    source={heartIcon}
+                    style={[styles.heart, heartAnimatedStyle]}
+                  />
+                </ImageBackground>
+                <View
+                  style={{
+                    ...StyleSheet.absoluteFillObject,
+                    backgroundColor: 'rgba(0,0,0,0.3)',
+                  }}
+                />
+              </View>
+            </GestureDetector>
+          );
+        }}
+      />
+
+      {/* Tabs */}
+      <Tabs />
+    </>
+  );
+};
+
+export default DynamicTabs;
+
+const styles = StyleSheet.create({
+  tabsContainer: {
+    position: 'absolute',
+    top: 20,
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-evenly',
+  },
+  tabText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  tabIndicator: {
+    backgroundColor: COLORS.white,
+    position: 'absolute',
+    width: 30,
+    height: 4,
+    bottom: -5,
+    left: 0,
+  },
+  imageBgStyles: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heart: {
+    width: 100,
+    height: 100,
+    tintColor: COLORS.red,
+  },
+});
